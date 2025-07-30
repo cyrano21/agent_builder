@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -32,6 +33,7 @@ import {
 } from "lucide-react";
 
 export default function SettingsPage() {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
   const [saveStatus, setSaveStatus] = useState<{ type: 'success' | 'error' | null; message: string }>({ type: null, message: '' });
@@ -144,15 +146,15 @@ export default function SettingsPage() {
                 <span className="text-xl font-bold">Agent Builder Enterprise v2</span>
               </div>
               <nav className="hidden md:flex space-x-4">
-                <Button variant="ghost" size="sm" onClick={() => window.location.href = '/'}>
+                <Button variant="ghost" size="sm" onClick={() => router.push('/')}>
                   Accueil
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => window.location.href = '/?view=dashboard'}>
+                <Button variant="ghost" size="sm" onClick={() => router.push('/?view=dashboard')}>
                   Tableau de bord
                 </Button>
-                <Button variant="ghost" size="sm">Projets</Button>
+                <Button variant="ghost" size="sm" onClick={() => router.push('/projects')}>Projets</Button>
                 <Button variant="ghost" size="sm">Paramètres</Button>
-                <Button variant="ghost" size="sm" onClick={() => window.location.href = '/billing'}>
+                <Button variant="ghost" size="sm" onClick={() => router.push('/billing')}>
                   Facturation
                 </Button>
               </nav>
@@ -235,7 +237,7 @@ export default function SettingsPage() {
                   <Button 
                     variant={activeTab === "billing" ? "default" : "ghost"} 
                     className="w-full justify-start"
-                    onClick={() => window.location.href = '/billing'}
+                    onClick={() => router.push('/billing')}
                   >
                     <Database className="w-4 h-4 mr-2" />
                     Facturation
@@ -334,6 +336,8 @@ export default function SettingsPage() {
                           <p className="text-sm text-muted-foreground">Choisissez le modèle d'IA pour la génération</p>
                         </div>
                         <select 
+                          id="primary-model"
+                          aria-label="Modèle LLM principal"
                           className="px-3 py-2 border rounded-md"
                           value={aiSettings.primaryModel}
                           onChange={(e) => setAiSettings({...aiSettings, primaryModel: e.target.value})}
@@ -355,6 +359,8 @@ export default function SettingsPage() {
                           value={aiSettings.temperature}
                           onChange={(e) => setAiSettings({...aiSettings, temperature: parseFloat(e.target.value)})}
                           className="w-full"
+                          title={`Température: ${aiSettings.temperature}`}
+                          aria-label={`Température: ${aiSettings.temperature}`}
                         />
                         <p className="text-sm text-muted-foreground">
                           Contrôle la créativité de l'IA. Plus élevé = plus créatif, plus bas = plus précis

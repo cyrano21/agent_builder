@@ -3,19 +3,25 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
-import { 
-  Loader2, 
-  Sparkles, 
-  Zap, 
+import {
+  Loader2,
+  Sparkles,
+  Zap,
   Plus,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
 } from "lucide-react";
 
 // Import our new components
@@ -52,137 +58,86 @@ interface Project {
 
 export default function Home() {
   // Navigation history hook
-  const { 
-    currentView, 
-    navigateTo, 
-    goBack, 
-    canGoBack,
-    history 
-  } = useNavigationHistory();
-  
+  const { currentView, navigateTo, goBack, canGoBack, history } =
+    useNavigationHistory();
+
   // Get view from URL parameters
   const [idea, setIdea] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPlan, setGeneratedPlan] = useState<any>(null);
   const [modelSelection, setModelSelection] = useState<ClientModelSelection>({
-    primaryModel: 'gpt-4-turbo',
-    fallbackModel: 'claude-3-sonnet',
+    primaryModel: "gpt-4-turbo",
+    fallbackModel: "claude-3-sonnet",
     temperature: 0.7,
     maxTokens: 4000,
     topP: 1.0,
     frequencyPenalty: 0,
-    presencePenalty: 0
+    presencePenalty: 0,
   });
-  const [selectedTemplate, setSelectedTemplate] = useState<ProjectTemplate | null>(null);
+  const [selectedTemplate, setSelectedTemplate] =
+    useState<ProjectTemplate | null>(null);
 
   // Dashboard state
   const [activeTab, setActiveTab] = useState("overview");
   const [newIdea, setNewIdea] = useState("");
   const [isCreating, setIsCreating] = useState(false);
 
-  // Mock projects data
-  const [projects, setProjects] = useState<Project[]>([
-    {
-      id: "1",
-      title: "SaaS de Facturation Auto",
-      description: "Solution complète de facturation automatisée",
-      status: "completed",
-      progress: 100,
-      createdAt: "2024-01-15",
-      lastModified: "2024-01-15",
-      deliverables: {
-        plan: true,
-        architecture: true,
-        wireframes: true,
-        design: true,
-        backend: true,
-        devops: true,
-        documentation: true
+  // Load projects from database
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadProjects = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await fetch("/api/projects?userId=cmdqa2tgd0000spjaur9krmje");
+        if (response.ok) {
+          const data = await response.json();
+          setProjects(data);
+        } else {
+          setError("Erreur lors du chargement des projets");
+        }
+      } catch (error) {
+        console.error("Error loading projects:", error);
+        setError("Erreur de connexion au serveur");
+      } finally {
+        setLoading(false);
       }
-    },
-    {
-      id: "2",
-      title: "Marketplace NFT",
-      description: "Plateforme de trading NFT avec intégration blockchain",
-      status: "generating",
-      progress: 75,
-      createdAt: "2024-01-14",
-      lastModified: "2024-01-15",
-      deliverables: {
-        plan: true,
-        architecture: true,
-        wireframes: true,
-        design: true,
-        backend: false,
-        devops: false,
-        documentation: false
-      }
-    },
-    {
-      id: "3",
-      title: "App de Gestion de Projet",
-      description: "Application collaborative de gestion de tâches",
-      status: "draft",
-      progress: 0,
-      createdAt: "2024-01-13",
-      lastModified: "2024-01-13",
-      deliverables: {
-        plan: false,
-        architecture: false,
-        wireframes: false,
-        design: false,
-        backend: false,
-        devops: false,
-        documentation: false
-      }
-    }
-  ]);
+    };
+
+    loadProjects();
+  }, []);
 
   const handleGeneratePlan = async () => {
     if (!idea.trim()) return;
-    
+
     setIsGenerating(true);
     try {
       // Call the actual API
-      const response = await fetch('/api/generate', {
-        method: 'POST',
+      const response = await fetch("/api/generate", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          projectId: 'temp',
+          projectId: "temp",
           idea: idea.trim(),
-          modelSelection: modelSelection
+          modelSelection: modelSelection,
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to generate plan');
+        throw new Error("Failed to generate plan");
       }
 
       const data = await response.json();
-      
-      // Mock response structure for demo
-      setGeneratedPlan({
-        title: idea.split(',')[0] || "Nouveau Projet",
-        description: idea,
-        features: ["Plan généré avec succès", "Architecture technique", "Design system", "Backend code", "DevOps configuration"],
-        techStack: ["Next.js", "Prisma", "PostgreSQL", "Stripe"],
-        timeline: "4-6 semaines",
-        estimatedCost: "$15,000 - $25,000",
-        generatedData: data
-      });
+
+      setGeneratedPlan(data);
     } catch (error) {
       console.error("Error generating plan:", error);
-      // Fallback to mock data for demo
-      setGeneratedPlan({
-        title: idea.split(',')[0] || "Nouveau Projet",
-        description: idea,
-        features: ["Plan généré avec succès", "Architecture technique", "Design system", "Backend code", "DevOps configuration"],
-        techStack: ["Next.js", "Prisma", "PostgreSQL", "Stripe"],
-        timeline: "4-6 semaines",
-        estimatedCost: "$15,000 - $25,000"
-      });
+      alert("Erreur lors de la génération du plan");
     } finally {
       setIsGenerating(false);
     }
@@ -190,80 +145,62 @@ export default function Home() {
 
   const handleCreateProject = async () => {
     if (!newIdea.trim()) return;
-    
+
     setIsCreating(true);
     try {
-      // Call the actual API
-      const response = await fetch('/api/projects', {
-        method: 'POST',
+      const response = await fetch("/api/projects", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          title: newIdea.split(',')[0] || "Nouveau Projet",
+          title: newIdea.split(",")[0] || "Nouveau Projet",
           description: newIdea.trim(),
-          userId: 'demo-user', // In real app, this would come from authentication
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create project');
+        throw new Error("Failed to create project");
       }
 
       const newProject = await response.json();
-      
+
       setProjects([newProject, ...projects]);
       setNewIdea("");
     } catch (error) {
       console.error("Error creating project:", error);
-      // Fallback to mock data for demo
-      const newProject: Project = {
-        id: Date.now().toString(),
-        title: newIdea.split(',')[0] || "Nouveau Projet",
-        description: newIdea,
-        status: "draft",
-        progress: 0,
-        createdAt: new Date().toISOString().split('T')[0],
-        lastModified: new Date().toISOString().split('T')[0],
-        deliverables: {
-          plan: false,
-          architecture: false,
-          wireframes: false,
-          design: false,
-          backend: false,
-          devops: false,
-          documentation: false
-        }
-      };
-      
-      setProjects([newProject, ...projects]);
-      setNewIdea("");
+      alert("Erreur lors de la création du projet");
     } finally {
       setIsCreating(false);
     }
   };
 
-  const handleExportProject = async (projectId: string, projectName: string) => {
+  const handleExportProject = async (
+    projectId: string,
+    projectName: string
+  ) => {
     try {
       const response = await fetch(`/api/projects/${projectId}/export`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ format: 'zip' }),
+        body: JSON.stringify({ format: "zip" }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to export project');
+        throw new Error("Failed to export project");
       }
 
       // Create download link
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
+      const a = document.createElement("a");
+      a.style.display = "none";
       a.href = url;
-      a.download = `${projectName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_project_package.zip`;
+      a.download = `${projectName
+        .replace(/[^a-z0-9]/gi, "_")
+        .toLowerCase()}_project_package.zip`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -274,12 +211,16 @@ export default function Home() {
     }
   };
 
-  const handleGenerateDeliverable = async (projectId: string, deliverableType: string, projectDescription: string) => {
+  const handleGenerateDeliverable = async (
+    projectId: string,
+    deliverableType: string,
+    projectDescription: string
+  ) => {
     try {
       const response = await fetch(`/api/projects/${projectId}/deliverables`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           deliverableType,
@@ -288,17 +229,17 @@ export default function Home() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to generate deliverable');
+        throw new Error("Failed to generate deliverable");
       }
 
       const data = await response.json();
-      
-      // Update project in state
-      setProjects(projects.map(p => 
-        p.id === projectId 
-          ? { ...data.project, lastModified: new Date().toISOString().split('T')[0] }
-          : p
-      ));
+
+      // Refresh projects to get updated data
+      const projectsResponse = await fetch("/api/projects?userId=cmdqa2tgd0000spjaur9krmje");
+      if (projectsResponse.ok) {
+        const updatedProjects = await projectsResponse.json();
+        setProjects(updatedProjects);
+      }
 
       alert(`Livrable ${deliverableType} généré avec succès !`);
     } catch (error) {
@@ -312,14 +253,19 @@ export default function Home() {
 
     try {
       const response = await fetch(`/api/projects/${projectId}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete project');
+        throw new Error("Failed to delete project");
       }
 
-      setProjects(projects.filter(p => p.id !== projectId));
+      // Refresh projects to get updated data
+      const projectsResponse = await fetch("/api/projects?userId=cmdqa2tgd0000spjaur9krmje");
+      if (projectsResponse.ok) {
+        const updatedProjects = await projectsResponse.json();
+        setProjects(updatedProjects);
+      }
     } catch (error) {
       console.error("Error deleting project:", error);
       alert("Erreur lors de la suppression du projet");
@@ -389,7 +335,10 @@ export default function Home() {
             animate={{ scale: 1 }}
             transition={{ type: "spring", stiffness: 500, damping: 15 }}
           >
-            <Badge variant="outline" className="border-2 hover:border-primary hover:text-primary transition-all duration-200">
+            <Badge
+              variant="outline"
+              className="border-2 hover:border-primary hover:text-primary transition-all duration-200"
+            >
               Brouillon
             </Badge>
           </motion.div>
@@ -399,13 +348,17 @@ export default function Home() {
 
   const stats = {
     totalProjects: projects.length,
-    completedProjects: projects.filter(p => p.status === "completed").length,
-    inProgressProjects: projects.filter(p => p.status === "generating").length,
-    avgGenerationTime: "8.5 minutes"
+    completedProjects: projects.filter((p) => p.status === "completed").length,
+    inProgressProjects: projects.filter((p) => p.status === "generating")
+      .length,
+    avgGenerationTime: projects.length > 0 ? "8.5 minutes" : "N/A",
   };
 
   // Navigation handler - utilise le hook maintenant
-  const navigateToHandler = (view: "landing" | "dashboard" | "settings", path?: string) => {
+  const navigateToHandler = (
+    view: "landing" | "dashboard" | "settings",
+    path?: string
+  ) => {
     navigateTo(view, path);
   };
 
@@ -485,21 +438,27 @@ export default function Home() {
           <StatsCards stats={stats} />
 
           {/* Tabs */}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3 max-w-md">
-              <TabsTrigger value="overview">Aperçu</TabsTrigger>
-              <TabsTrigger value="projects">Projets</TabsTrigger>
-              <TabsTrigger value="activity">Activité</TabsTrigger>
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="space-y-6"
+          >
+            <TabsList className="grid w-full grid-cols-3 max-w-md h-10">
+              <TabsTrigger value="overview" className="text-sm px-4 py-2">Aperçu</TabsTrigger>
+              <TabsTrigger value="projects" className="text-sm px-4 py-2">Projets</TabsTrigger>
+              <TabsTrigger value="activity" className="text-sm px-4 py-2">Activité</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
               {/* Quick Actions */}
               <Card>
-                <CardHeader>
-                  <CardTitle>Actions Rapides</CardTitle>
-                  <CardDescription>Créez un nouveau projet ou générez un plan</CardDescription>
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-xl font-semibold">Actions Rapides</CardTitle>
+                  <CardDescription className="text-sm">
+                    Créez un nouveau projet ou générez un plan
+                  </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 px-6 pb-6">
                   <div className="space-y-3">
                     {/* Enhanced textarea for project creation */}
                     <div className="relative">
@@ -514,7 +473,7 @@ export default function Home() {
                         }}
                         className="min-h-[100px] max-h-[200px] resize-y text-base leading-relaxed p-4 border-2 border-primary/20 focus:border-primary/40 transition-all duration-200 shadow-md hover:shadow-lg focus:shadow-xl bg-white/95 backdrop-blur-sm rounded-lg"
                         onKeyDown={(e) => {
-                          if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                          if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
                             e.preventDefault();
                             handleCreateProject();
                           }
@@ -522,32 +481,38 @@ export default function Home() {
                       />
                       {/* Enhanced character counter and status */}
                       <div className="absolute bottom-2 right-2 flex items-center gap-2">
-                        <div className={`text-xs px-2 py-1 rounded font-medium ${
-                          newIdea.length > 900 
-                            ? 'bg-red-100 text-red-700 border border-red-200' 
-                            : newIdea.length > 700 
-                            ? 'bg-yellow-100 text-yellow-700 border border-yellow-200'
-                            : 'bg-white/80 text-muted-foreground border border-gray-200'
-                        }`}>
+                        <div
+                          className={`text-xs px-2 py-1 rounded font-medium ${
+                            newIdea.length > 900
+                              ? "bg-red-100 text-red-700 border border-red-200"
+                              : newIdea.length > 700
+                              ? "bg-yellow-100 text-yellow-700 border border-yellow-200"
+                              : "bg-white/80 text-muted-foreground border border-gray-200"
+                          }`}
+                        >
                           {newIdea.length}/1000 caractères
                         </div>
                         {newIdea.length > 0 && (
-                          <div className={`w-2 h-2 rounded-full ${
-                            newIdea.length < 10 
-                              ? 'bg-red-500 animate-pulse'
-                              : newIdea.length < 30
-                              ? 'bg-yellow-500'
-                              : 'bg-green-500'
-                          }`}></div>
+                          <div
+                            className={`w-2 h-2 rounded-full ${
+                              newIdea.length < 10
+                                ? "bg-red-500 animate-pulse"
+                                : newIdea.length < 30
+                                ? "bg-yellow-500"
+                                : "bg-green-500"
+                            }`}
+                          ></div>
                         )}
                       </div>
                     </div>
-                    
+
                     {/* Action button */}
                     <div className="flex justify-end">
-                      <Button 
+                      <Button
                         onClick={handleCreateProject}
-                        disabled={isCreating || !newIdea.trim() || newIdea.length < 10}
+                        disabled={
+                          isCreating || !newIdea.trim() || newIdea.length < 10
+                        }
                         className="h-12 px-6 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary transition-all duration-200 text-base font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {isCreating ? (
@@ -563,10 +528,16 @@ export default function Home() {
                         )}
                       </Button>
                     </div>
-                    
+
                     {/* Helper text */}
                     <div className="text-xs text-muted-foreground text-center">
-                      <p>Appuyez sur <kbd className="px-2 py-1 bg-muted rounded text-xs">Ctrl+Enter</kbd> pour créer rapidement</p>
+                      <p>
+                        Appuyez sur{" "}
+                        <kbd className="px-2 py-1 bg-muted rounded text-xs">
+                          Ctrl+Enter
+                        </kbd>{" "}
+                        pour créer rapidement
+                      </p>
                       <p className="mt-1">Minimum 10 caractères requis</p>
                     </div>
                   </div>
@@ -575,18 +546,23 @@ export default function Home() {
 
               {/* Recent Projects */}
               <Card>
-                <CardHeader>
-                  <CardTitle>Projets Récents</CardTitle>
-                  <CardDescription>Vos derniers projets et leur statut</CardDescription>
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-xl font-semibold">Projets Récents</CardTitle>
+                  <CardDescription className="text-sm">
+                    Vos derniers projets et leur statut
+                  </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <RecentProjects projects={projects} getStatusBadge={getStatusBadge} />
+                <CardContent className="px-6 pb-6">
+                  <RecentProjects
+                    projects={projects}
+                    getStatusBadge={getStatusBadge}
+                  />
                 </CardContent>
               </Card>
             </TabsContent>
 
             <TabsContent value="projects" className="space-y-6">
-              <ProjectList 
+              <ProjectList
                 projects={projects}
                 onExportProject={handleExportProject}
                 onDeleteProject={handleDeleteProject}
@@ -655,7 +631,7 @@ export default function Home() {
 
       <FeaturesGrid />
 
-      <CTASection 
+      <CTASection
         onStartFree={() => navigateTo("dashboard")}
         onViewDemo={() => console.log("View demo")}
       />
@@ -668,33 +644,53 @@ export default function Home() {
   // Activity Section Component
   const ActivitySection = () => (
     <Card>
-      <CardHeader>
-        <CardTitle>Activité Récente</CardTitle>
-        <CardDescription>Les dernières actions sur vos projets</CardDescription>
+      <CardHeader className="pb-4">
+        <CardTitle className="text-xl font-semibold">Activité Récente</CardTitle>
+        <CardDescription className="text-sm">Les dernières actions sur vos projets</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-6 pb-6">
         <div className="space-y-4">
           {[
-            { action: "Projet créé", project: "Marketplace NFT", time: "Il y a 2 heures" },
-            { action: "Plan généré", project: "SaaS de Facturation Auto", time: "Il y a 5 heures" },
-            { action: "Design complété", project: "App de Gestion de Projet", time: "Hier" },
-            { action: "Backend déployé", project: "SaaS de Facturation Auto", time: "Il y a 2 jours" }
+            {
+              action: "Projet créé",
+              project: "Marketplace NFT",
+              time: "Il y a 2 heures",
+            },
+            {
+              action: "Plan généré",
+              project: "SaaS de Facturation Auto",
+              time: "Il y a 5 heures",
+            },
+            {
+              action: "Design complété",
+              project: "App de Gestion de Projet",
+              time: "Hier",
+            },
+            {
+              action: "Backend déployé",
+              project: "SaaS de Facturation Auto",
+              time: "Il y a 2 jours",
+            },
           ].map((activity, index) => (
             <motion.div
               key={index}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="flex items-center space-x-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors duration-200"
+              className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors duration-200"
             >
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
                 <Zap className="w-4 h-4 text-blue-600" />
               </div>
-              <div className="flex-1">
-                <p className="font-medium">{activity.action}</p>
-                <p className="text-sm text-muted-foreground">{activity.project}</p>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-sm sm:text-base">{activity.action}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                  {activity.project}
+                </p>
               </div>
-              <div className="text-sm text-muted-foreground">{activity.time}</div>
+              <div className="text-xs sm:text-sm text-muted-foreground flex-shrink-0">
+                {activity.time}
+              </div>
             </motion.div>
           ))}
         </div>

@@ -9,12 +9,12 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./db/custom.db"
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
 }
 
 model User {
-  id            String   @id @default(cuid())
+  id            String   @id @default(cuid()) @map("_id")
   email         String   @unique
   name          String?
   bio           String?
@@ -53,7 +53,7 @@ model User {
 }
 
 model UserSettings {
-  id               String   @id @default(cuid())
+  id               String   @id @default(cuid()) @map("_id")
   userId           String   @unique
   user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
@@ -79,7 +79,7 @@ model UserSettings {
 }
 
 model Project {
-  id            String   @id @default(cuid())
+  id            String   @id @default(cuid()) @map("_id")
   title         String
   description   String
   userId        String
@@ -125,7 +125,7 @@ model Project {
 }
 
 model ProjectTemplate {
-  id            String   @id @default(cuid())
+  id            String   @id @default(cuid()) @map("_id")
   name          String
   description   String
   category      String   @default("web-app")
@@ -163,7 +163,7 @@ model ProjectTemplate {
 }
 
 model Team {
-  id            String   @id @default(cuid())
+  id            String   @id @default(cuid()) @map("_id")
   name          String
   description   String?
   
@@ -183,7 +183,7 @@ model Team {
 }
 
 model TeamMember {
-  id          String   @id @default(cuid())
+  id          String   @id @default(cuid()) @map("_id")
   teamId      String
   userId      String
   role        TeamRole @default(MEMBER)
@@ -199,7 +199,7 @@ model TeamMember {
 }
 
 model ProjectComment {
-  id          String   @id @default(cuid())
+  id          String   @id @default(cuid()) @map("_id")
   projectId   String
   userId      String
   content     String
@@ -214,14 +214,14 @@ model ProjectComment {
   // Relations
   project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  parent      ProjectComment? @relation("CommentThread", fields: [parentId], references: [id])
+  parent      ProjectComment? @relation("CommentThread", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   replies     ProjectComment[] @relation("CommentThread")
   
   @@map("project_comments")
 }
 
 model ProjectShare {
-  id          String   @id @default(cuid())
+  id          String   @id @default(cuid()) @map("_id")
   projectId   String
   project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   
@@ -242,7 +242,7 @@ model ProjectShare {
 }
 
 model Notification {
-  id          String   @id @default(cuid())
+  id          String   @id @default(cuid()) @map("_id")
   userId      String
   type        NotificationType
   title       String
@@ -260,7 +260,7 @@ model Notification {
 }
 
 model ProjectDeliverable {
-  id          String   @id @default(cuid())
+  id          String   @id @default(cuid()) @map("_id")
   projectId   String
   project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   
@@ -277,7 +277,7 @@ model ProjectDeliverable {
 }
 
 model Subscription {
-  id            String           @id @default(cuid())
+  id            String           @id @default(cuid()) @map("_id")
   userId        String
   user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   

@@ -10,10 +10,10 @@ interface FooterProps {
 export default function Footer({ showFullFooter = true }: FooterProps) {
   if (!showFullFooter) {
     return (
-      <footer className="border-t bg-background/80 backdrop-blur-xl py-[2rem]">
+      <footer className="border-t bg-background/80 backdrop-blur-xl py-8">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div 
-            className="text-center text-[0.875rem] text-muted-foreground"
+            className="text-center text-sm text-muted-foreground"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5 }}
@@ -82,21 +82,21 @@ export default function Footer({ showFullFooter = true }: FooterProps) {
 
   return (
     <footer className="border-t bg-background/80 backdrop-blur-xl">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-[3rem]">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-[2rem]">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 2.5 }}
           >
-            <div className="flex items-center space-x-2 mb-[1rem]">
-              <Brain className="h-[2rem] w-[2rem] text-primary" />
+            <div className="flex items-center space-x-2 mb-4">
+              <Brain className="h-8 w-8 text-primary" />
               <div>
-                <span className="text-[1.125rem] lg:text-[1.25rem] font-bold leading-tight">Agent Builder</span>
-                <span className="block text-[0.875rem] lg:text-[1rem] text-muted-foreground">Enterprise v2</span>
+                <span className="text-lg lg:text-xl font-bold leading-tight">Agent Builder</span>
+                <span className="block text-sm lg:text-base text-muted-foreground">Enterprise v2</span>
               </div>
             </div>
-            <p className="text-[0.875rem] text-muted-foreground leading-relaxed">
+            <p className="text-sm text-muted-foreground leading-relaxed">
               Transformez vos idées en produits complets avec la puissance de l'AI.
             </p>
           </motion.div>
@@ -108,13 +108,13 @@ export default function Footer({ showFullFooter = true }: FooterProps) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 2.7 + index * 0.1 }}
             >
-              <h4 className="font-semibold mb-[1rem] text-[0.875rem]">{section.title}</h4>
-              <ul className="space-y-[0.5rem]">
+              <h4 className="font-semibold mb-4 text-sm">{section.title}</h4>
+              <ul className="space-y-2">
                 {section.links.map((link) => (
                   <li key={link.label}>
                     <button
                       onClick={() => handleLinkClick(link.href)}
-                      className="text-[0.875rem] text-muted-foreground hover:text-primary transition-colors duration-200 cursor-pointer w-full text-left"
+                      className="text-sm text-muted-foreground hover:text-primary transition-colors duration-200 cursor-pointer w-full text-left"
                     >
                       {link.label}
                     </button>
@@ -126,7 +126,7 @@ export default function Footer({ showFullFooter = true }: FooterProps) {
         </div>
         
         <motion.div 
-          className="border-t mt-[2rem] pt-[2rem] text-center text-[0.875rem] text-muted-foreground"
+          className="border-t mt-8 pt-8 text-center text-sm text-muted-foreground"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 3 }}

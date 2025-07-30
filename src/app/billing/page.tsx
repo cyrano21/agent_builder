@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -112,6 +113,7 @@ interface Invoice {
 }
 
 export default function BillingPage() {
+  const router = useRouter();
   const [currentPlan, setCurrentPlan] = useState("free");
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("plans");
@@ -219,13 +221,16 @@ export default function BillingPage() {
                 <span className="text-xl font-bold">Agent Builder Enterprise v2</span>
               </div>
               <nav className="hidden md:flex space-x-4">
-                <Button variant="ghost" size="sm" onClick={() => window.location.href = '/'}>
+                <Button variant="ghost" size="sm" onClick={() => router.push('/')}>
                   Accueil
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => window.location.href = '/?view=dashboard'}>
+                <Button variant="ghost" size="sm" onClick={() => router.push('/?view=dashboard')}>
                   Tableau de bord
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => window.location.href = '/?view=settings'}>
+                <Button variant="ghost" size="sm" onClick={() => router.push('/projects')}>
+                  Projets
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => router.push('/settings')}>
                   Paramètres
                 </Button>
                 <Button variant="ghost" size="sm">Facturation</Button>

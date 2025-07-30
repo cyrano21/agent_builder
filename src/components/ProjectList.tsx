@@ -213,23 +213,23 @@ export function RecentProjects({ projects, getStatusBadge }: RecentProjectsProps
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5 }}
           whileHover={{ scale: 1.02 }}
-          className="flex items-center justify-between p-4 border rounded-lg hover:shadow-md transition-all duration-200"
+          className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg hover:shadow-md transition-all duration-200 gap-3 sm:gap-4"
         >
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
             <motion.div
-              className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center text-white"
+              className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center text-white flex-shrink-0"
               whileHover={{ rotate: 10 }}
             >
               <FolderOpen className="w-5 h-5" />
             </motion.div>
-            <div>
-              <h4 className="font-medium">{project.title}</h4>
-              <p className="text-sm text-muted-foreground">{project.description}</p>
+            <div className="min-w-0 flex-1">
+              <h4 className="font-medium text-sm sm:text-base truncate">{project.title}</h4>
+              <p className="text-xs sm:text-sm text-muted-foreground truncate">{project.description}</p>
             </div>
           </div>
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3 sm:space-x-4 flex-shrink-0">
             {getStatusBadge(project.status)}
-            <Progress value={project.progress} className="w-24" />
+            <Progress value={project.progress} className="w-16 sm:w-24" />
           </div>
         </motion.div>
       ))}

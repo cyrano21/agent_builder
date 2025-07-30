@@ -10,7 +10,8 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=file:./data/db.sqlite
+      - DATABASE_URL=mongodb+srv://louiscyrano:Figoro21@cluster0.1yh3agm.mongodb.net/my-project?retryWrites=true&w=majority&appName=Cluster0
+      - MONGODB_URI=mongodb+srv://louiscyrano:Figoro21@cluster0.1yh3agm.mongodb.net/my-project?retryWrites=true&w=majority&appName=Cluster0
       - NEXTAUTH_URL=http://localhost:3000
       - NEXTAUTH_SECRET=your-nextauth-secret-here
       - GOOGLE_CLIENT_ID=your-google-client-id
@@ -19,21 +20,6 @@ services:
       - GITHUB_SECRET=your-github-secret
     volumes:
       - ./data:/app/data
-    depends_on:
-      - db
-    restart: unless-stopped
-
-  # Database (SQLite - for production, consider PostgreSQL)
-  db:
-    image: alpine:latest
-    volumes:
-      - ./data:/data
-    command: >
-      sh -c "
-        mkdir -p /data &&
-        touch /data/db.sqlite &&
-        chmod 666 /data/db.sqlite
-      "
     restart: unless-stopped
 
   # Redis for caching (optional)

@@ -30,6 +30,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         className="antialiased bg-background text-foreground font-sans"
+        suppressHydrationWarning
       >
         {children}
         <Toaster />
