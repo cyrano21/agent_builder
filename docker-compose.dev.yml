@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  # Next.js Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=file:./data/db.sqlite
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=dev-secret-key
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - ./data:/app/data
+    depends_on:
+      - db
+    command: npm run dev
+
+  # Database
+  db:
+    image: alpine:latest
+    volumes:
+      - ./data:/data
+    command: >
+      sh -c "
+        mkdir -p /data &&
+        touch /data/db.sqlite &&
+        chmod 666 /data/db.sqlite
+      "
+
+  # Redis for development
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  redis_data:

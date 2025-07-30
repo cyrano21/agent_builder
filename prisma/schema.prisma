@@ -1,0 +1,362 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./db/custom.db"
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String?
+  bio           String?
+  avatar        String?
+  password      String?
+  
+  // Role-based access control
+  role          UserRole @default(USER)
+  
+  // Authentication
+  emailVerified Boolean  @default(false)
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  projects      Project[]
+  subscriptions Subscription[]
+  settings      UserSettings?
+  
+  // Team relations
+  ownedTeams    Team[]   @relation("TeamOwner")
+  teamMemberships TeamMember[]
+  
+  // Comments
+  comments      ProjectComment[]
+  
+  // Notifications
+  notifications  Notification[]
+  
+  // Project shares
+  sharedProjects  ProjectShare[] @relation("SharedWith")
+  sharedByProjects ProjectShare[] @relation("SharedBy")
+  
+  @@map("users")
+}
+
+model UserSettings {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // AI Settings
+  primaryLLM       String   @default("gpt-4-turbo")
+  fallbackLLM      String   @default("claude-3-opus")
+  temperature      Float    @default(0.7)
+  maxTokens        Int      @default(4000)
+  
+  // Available LLM Models (JSON string array)
+  availableModels  String   @default("[\"gpt-4-turbo\", \"claude-3-opus\", \"gemini-pro\"]")
+  
+  // Notification Settings
+  emailNotifications Boolean @default(true)
+  projectCompleted  Boolean @default(true)
+  generationErrors  Boolean @default(true)
+  updates           Boolean @default(false)
+  
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  
+  @@map("user_settings")
+}
+
+model Project {
+  id            String   @id @default(cuid())
+  title         String
+  description   String
+  userId        String
+  teamId        String?
+  status        ProjectStatus @default(DRAFT)
+  progress      Int      @default(0)
+  
+  // Template reference
+  templateId    String?
+  template      ProjectTemplate? @relation(fields: [templateId], references: [id])
+  
+  // Deliverables tracking
+  plan          Boolean  @default(false)
+  architecture  Boolean  @default(false)
+  wireframes    Boolean  @default(false)
+  design        Boolean  @default(false)
+  backend       Boolean  @default(false)
+  devops        Boolean  @default(false)
+  documentation Boolean  @default(false)
+  
+  // Generated content
+  generatedPlan String?
+  generatedArch String?
+  generatedWireframes String?
+  generatedDesign String?
+  generatedBackend String?
+  generatedDevops String?
+  
+  // LLM Model used for generation
+  llmModel      String?
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliverables  ProjectDeliverable[]
+  team          Team?     @relation(fields: [teamId], references: [id])
+  comments      ProjectComment[]
+  shares        ProjectShare[]
+  
+  @@map("projects")
+}
+
+model ProjectTemplate {
+  id            String   @id @default(cuid())
+  name          String
+  description   String
+  category      String   @default("web-app")
+  
+  // Template configuration
+  structure     Json     // Project structure definition
+  dependencies  Json     // Required dependencies
+  config        Json     // Configuration files
+  
+  // AI prompts for each deliverable
+  planPrompt       String?
+  archPrompt       String?
+  wireframesPrompt String?
+  designPrompt     String?
+  backendPrompt    String?
+  devopsPrompt     String?
+  docsPrompt       String?
+  
+  // Recommended LLM models (JSON string array)
+  recommendedModels String   @default("[\"gpt-4-turbo\"]")
+  
+  // Usage stats
+  usageCount    Int      @default(0)
+  
+  isPublic      Boolean  @default(true)
+  createdBy     String?
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  projects      Project[]
+  
+  @@map("project_templates")
+}
+
+model Team {
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  
+  // Team settings
+  maxMembers    Int      @default(10)
+  isPublic      Boolean  @default(false)
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  owner         User     @relation("TeamOwner", fields: [id], references: [id])
+  members       TeamMember[]
+  projects      Project[]
+  
+  @@map("teams")
+}
+
+model TeamMember {
+  id          String   @id @default(cuid())
+  teamId      String
+  userId      String
+  role        TeamRole @default(MEMBER)
+  
+  joinedAt    DateTime @default(now())
+  
+  // Relations
+  team        Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([teamId, userId])
+  @@map("team_members")
+}
+
+model ProjectComment {
+  id          String   @id @default(cuid())
+  projectId   String
+  userId      String
+  content     String
+  
+  // Comment metadata
+  parentId    String?  // For threaded comments
+  deliverableType String? // Associated deliverable
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent      ProjectComment? @relation("CommentThread", fields: [parentId], references: [id])
+  replies     ProjectComment[] @relation("CommentThread")
+  
+  @@map("project_comments")
+}
+
+model ProjectShare {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  sharedById  String
+  sharedBy    User     @relation("SharedBy", fields: [sharedById], references: [id])
+  
+  sharedWithId String
+  sharedWith  User     @relation("SharedWith", fields: [sharedWithId], references: [id])
+  
+  accessLevel String   @default("VIEW") // VIEW, EDIT, ADMIN
+  settings    Json?    // Share settings
+  expiresAt   DateTime?
+  
+  createdAt   DateTime @default(now())
+  
+  @@unique([projectId, sharedWithId])
+  @@map("project_shares")
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String
+  type        NotificationType
+  title       String
+  message     String
+  data        Json?    // Additional notification data
+  
+  isRead      Boolean  @default(false)
+  
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("notifications")
+}
+
+model ProjectDeliverable {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  type        DeliverableType
+  content     String
+  fileName    String?
+  fileSize    Int?
+  downloadUrl String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("project_deliverables")
+}
+
+model Subscription {
+  id            String           @id @default(cuid())
+  userId        String
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  plan          SubscriptionPlan @default(FREE)
+  status        SubscriptionStatus @default(ACTIVE)
+  
+  // Billing info
+  stripeCustomerId String?
+  stripeSubscriptionId String?
+  stripePriceId      String?
+  
+  // Usage tracking
+  projectsGenerated Int @default(0)
+  tokensUsed        Int @default(0)
+  storageUsed       Int @default(0) // in bytes
+  
+  // Limits
+  maxProjects       Int @default(3)
+  maxTokens         Int @default(50000)
+  maxStorage        Int @default(1073741824) // 1GB
+  
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@map("subscriptions")
+}
+
+enum ProjectStatus {
+  DRAFT
+  GENERATING
+  COMPLETED
+  FAILED
+}
+
+enum DeliverableType {
+  PLAN
+  ARCHITECTURE
+  WIREFRAMES
+  DESIGN
+  BACKEND
+  DEVOPS
+  DOCUMENTATION
+}
+
+enum SubscriptionPlan {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  EXPIRED
+  PENDING
+}
+
+enum TeamRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum NotificationType {
+  PROJECT_COMPLETED
+  PROJECT_FAILED
+  TEAM_INVITATION
+  COMMENT_ADDED
+  PROJECT_SHARED
+  SYSTEM_UPDATE
+  BILLING_UPDATE
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  SUPER_ADMIN
+}

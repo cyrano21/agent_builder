@@ -1,0 +1,233 @@
+name: Templates & Security Maintenance
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      update_templates:
+        description: 'Update project templates'
+        required: false
+        default: 'false'
+        type: boolean
+      security_scan:
+        description: 'Run security scan'
+        required: false
+        default: 'true'
+        type: boolean
+
+jobs:
+  # Update Project Templates
+  update-templates:
+    name: Update Project Templates
+    runs-on: ubuntu-latest
+    if: github.event.inputs.update_templates == 'true' || github.event.schedule
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Generate new templates
+      run: |
+        # This would typically involve calling an AI service to generate new templates
+        # For now, we'll just update existing ones
+        npm run templates:update
+        
+    - name: Commit template updates
+      uses: stefanzweifel/git-auto-commit-action@v5
+      with:
+        commit_message: 'chore: update project templates'
+        file_pattern: 'src/lib/templates/*'
+
+  # Security Vulnerability Scanning
+  security-scan:
+    name: Security Vulnerability Scan
+    runs-on: ubuntu-latest
+    if: github.event.inputs.security_scan == 'true' || github.event.schedule
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Run npm audit
+      run: npm audit --audit-level=moderate
+      
+    - name: Run OWASP Dependency Check
+      uses: dependency-check/dependency-check-action@v4
+      with:
+        project: 'ai-agent-builder'
+        format: 'SARIF'
+        out: 'reports/'
+        
+    - name: Upload Dependency Check Results
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: 'reports/dependency-check.sarif'
+        
+    - name: Create issue if vulnerabilities found
+      if: failure()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const vulnerabilities = process.env.VULNERABILITY_COUNT || 'unknown';
+          github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: `Security Vulnerabilities Detected - ${new Date().toISOString()}`,
+            body: `Security vulnerabilities were detected during the automated scan.\\n\\n**Vulnerability Count:** ${vulnerabilities}\\n\\nPlease review and address these vulnerabilities as soon as possible.`,
+            labels: ['security', 'vulnerability', 'automated']
+          })
+
+  # Database Maintenance
+  database-maintenance:
+    name: Database Maintenance
+    runs-on: ubuntu-latest
+    if: github.event.schedule
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run database maintenance
+      run: |
+        # This would typically involve database cleanup, optimization, etc.
+        echo "Running database maintenance tasks..."
+        
+    - name: Create database backup
+      run: |
+        # Create backup of database schema and migrations
+        npx prisma db push --preview-feature
+        git add prisma/migrations/
+        git commit -m "chore: database migration backup" || true
+
+  # Performance Monitoring
+  performance-monitoring:
+    name: Performance Monitoring
+    runs-on: ubuntu-latest
+    if: github.event.schedule
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run performance tests
+      run: |
+        # Run Lighthouse CI or other performance tests
+        echo "Running performance tests..."
+        
+    - name: Generate performance report
+      run: |
+        # Generate performance report and commit if significant changes
+        echo "Generating performance report..."
+
+  # Cleanup and Optimization
+  cleanup:
+    name: Cleanup and Optimization
+    runs-on: ubuntu-latest
+    if: github.event.schedule
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Cleanup old branches
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const branches = await github.rest.repos.listBranches({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            protected: false
+          });
+          
+          const oldBranches = branches.data.filter(branch => {
+            const branchName = branch.name;
+            // Skip main, develop, and recent branches
+            if (['main', 'develop'].includes(branchName)) return false;
+            
+            // Check if branch is older than 30 days
+            const branchDate = new Date(branch.commit.commit.author.date);
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            
+            return branchDate < thirtyDaysAgo;
+          });
+          
+          for (const branch of oldBranches) {
+            try {
+              await github.rest.git.deleteRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: `heads/${branch.name}`
+              });
+              console.log(`Deleted old branch: ${branch.name}`);
+            } catch (error) {
+              console.log(`Failed to delete branch ${branch.name}:`, error.message);
+            }
+          }
+
+  # Generate Report
+  generate-report:
+    name: Generate Maintenance Report
+    runs-on: ubuntu-latest
+    needs: [update-templates, security-scan, database-maintenance, performance-monitoring, cleanup]
+    if: always()
+    
+    steps:
+    - name: Generate maintenance report
+      run: |
+        echo "# Maintenance Report - $(date)" > report.md
+        echo "" >> report.md
+        echo "## Summary" >> report.md
+        echo "- Templates updated: ${{ needs.update-templates.result }}" >> report.md
+        echo "- Security scan completed: ${{ needs.security-scan.result }}" >> report.md
+        echo "- Database maintenance: ${{ needs.database-maintenance.result }}" >> report.md
+        echo "- Performance monitoring: ${{ needs.performance-monitoring.result }}" >> report.md
+        echo "- Cleanup completed: ${{ needs.cleanup.result }}" >> report.md
+        
+    - name: Upload report
+      uses: actions/upload-artifact@v3
+      with:
+        name: maintenance-report
+        path: report.md
+        
+    - name: Comment on issue if maintenance failed
+      if: failure()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const report = await fs.readFileSync('report.md', 'utf8');
+          github.rest.issues.createComment({
+            issue_number: 1, // Maintenance tracking issue
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: `## Daily Maintenance Report\\n\\n${report}`
+          });
